@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Magical Gallery | Music Edition</title>
+
+  <style>
+    :root {
+      --bg-color: #030108; 
+      --twilight-purple: #a855f7;
+      --bloom-pink: #f472b6;
+      --star-blue: #60a5fa;
+    }
+
+    /* Saytın sabitliyi */
+    html, body {
+      width: 100%; height: 100%; margin: 0; padding: 0;
+      overflow: hidden; position: fixed;
+      background: var(--bg-color); font-family: sans-serif;
+    }
+
+    * { box-sizing: border-box; cursor: none; }
+    canvas { position: fixed; top: 0; left: 0; z-index: 1; width: 100vw; height: 100vh; }
+
+    /* Estetik elementlər */
+    .vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, transparent 30%, rgba(0, 0, 0, 0.9) 100%); z-index: 2; pointer-events: none; }
+    .particles-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+    
+    .magic-spark {
+      position: absolute;
+      font-size: 20px;
+      user-select: none;
+      animation: floatMagic infinite ease-in-out;
+      opacity: 0;
+    }
+
+    @keyframes floatMagic {
+      0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+      20% { opacity: 0.5; }
+      80% { opacity: 0.5; }
+      100% { transform: translateY(-10vh) scale(1.1); opacity: 0; }
+    }
+
+    /* 2 Sətirli Naviqasiya */
+    .slider-nav {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 12px;
+      padding: 15px 25px;
+      background: rgba(25, 10, 45, 0.4);
+      backdrop-filter: blur(12px);
+      border-radius: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 10;
+    }
+
+    .nav-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); cursor: pointer; transition: 0.4s; }
+    .nav-dot.active { background: var(--bloom-pink); box-shadow: 0 0 15px var(--bloom-pink); transform: scale(1.3); }
+
+    /* Yuxarı Şəkillər - Yenilənmiş (120px və Ortadakı Silindi) */
+    .fairy-container { 
+      position: absolute; 
+      top: 40px; 
+      width: 100%; 
+      display: flex; 
+      justify-content: space-between; 
+      padding: 0 60px; 
+      z-index: 10; 
+    }
+    .fairy-frame { 
+      width: 120px; 
+      height: 120px; 
+      border-radius: 50%; 
+      background: #000; 
+      border: 3px solid transparent; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      transition: 0.4s; 
+    }
+    .fairy-frame.bloom { border-color: var(--bloom-pink); box-shadow: 0 0 40px var(--bloom-pink); }
+    .fairy-frame.twilight { border-color: var(--twilight-purple); box-shadow: 0 0 40px var(--twilight-purple); }
+    .fairy-frame img { width: 94%; height: 94%; border-radius: 50%; object-fit: cover; }
+
+    .custom-cursor { position: fixed; top: 0; left: 0; width: 40px; height: 40px; background: radial-gradient(circle, #fff 0%, var(--twilight-purple) 30%, transparent 70%); border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 9999; mix-blend-mode: screen; box-shadow: 0 0 25px var(--twilight-purple); }
+  </style>
+</head>
+<body>
+
+<!-- MUSİQİ ELEMENTİ -->
+<audio id="bgMusic" loop preload="auto">
+  <source src="Lovers Rock.m4a" type="audio/mpeg">
+</audio>
+
+<div class="vignette"></div>
+<div class="particles-container" id="particles"></div>
+<div class="custom-cursor" id="cursor"></div>
+
+<div class="fairy-container">
+  <!-- Sol şəkil -->
+  <div class="fairy-frame bloom"><img src="bloom.jpg" onerror="this.src='https://via.placeholder.com/150/f472b6/ffffff?text=B'"></div>
+  <!-- Sağ şəkil -->
+  <div class="fairy-frame twilight"><img src="twilight.jpg" onerror="this.src='https://via.placeholder.com/150/a855f7/ffffff?text=T'"></div>
+</div>
+
+<div class="slider-nav" id="dots"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+<script>
+// AVTOMATİK MUSİQİ SİSTEMİ
+const music = document.getElementById('bgMusic');
+
+function handleAutoPlay() {
+  music.play().then(() => {
+    window.removeEventListener('mousedown', handleAutoPlay);
+    window.removeEventListener('touchstart', handleAutoPlay);
+    window.removeEventListener('keydown', handleAutoPlay);
+  }).catch(e => console.log("Musiqi üçün klik gözlənilir..."));
+}
+
+// Bütün mümkün qarşılıqlı təsirləri dinləyirik
+window.addEventListener('mousedown', handleAutoPlay);
+window.addEventListener('touchstart', handleAutoPlay);
+window.addEventListener('keydown', handleAutoPlay);
+
+// ÜMUMİ SAYT KODLARI
+const images = ['cat1.jpg', 'cat2.jpg', 'cat3.jpg', 'cat4.jpeg', 'cat5.jpeg', 'cat6.jpeg', 'cat7.jpeg', 'cat8.jpeg', 'cat9.jpeg', 'cat10.jpeg', 'cat11.jpeg', 'cat12.jpeg', 'cat13.jpeg', 'cat14.jpeg', 'cat15.jpeg', 'cat16.jpeg', 'cat17.jpeg', 'cat18.jpeg', 'cat19.jpeg', 'cat20.jpeg'];
+const emojis = ['🌸', '✨', '💖', '🐾', '⭐', '🌺', '💕'];
+
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', (e) => {
+  gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+});
+
+function createSparkles() {
+  const container = document.getElementById('particles');
+  setInterval(() => {
+    let div = document.createElement('div');
+    div.className = 'magic-spark';
+    div.innerText = emojis[Math.floor(Math.random() * emojis.length)];
+    div.style.left = Math.random() * 100 + 'vw';
+    div.style.animationDuration = Math.random() * 3 + 5 + 's';
+    container.appendChild(div);
+    setTimeout(() => div.remove(), 8000);
+  }, 500);
+}
+createSparkles();
+
+let scene, camera, renderer, material;
+let textures = [];
+let currentIndex = 0;
+let isAnimating = false;
+
+function init() {
+  scene = new THREE.Scene();
+  camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.insertBefore(renderer.domElement, document.body.firstChild);
+
+  const loader = new THREE.TextureLoader();
+  let loadedCount = 0;
+  images.forEach((url, i) => {
+    loader.load(url, (tex) => {
+      textures[i] = tex;
+      loadedCount++;
+      if (loadedCount === images.length) startApp();
+    }, undefined, () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#0a0514'; ctx.fillRect(0,0,512,512);
+      textures[i] = new THREE.CanvasTexture(canvas);
+      loadedCount++;
+      if (loadedCount === images.length) startApp();
+    });
+  });
+}
+
+function startApp() {
+  const geometry = new THREE.PlaneGeometry(2, 2);
+  material = new THREE.ShaderMaterial({
+    uniforms: {
+      uTexture1: { value: textures[0] },
+      uTexture2: { value: textures[0] },
+      uProgress: { value: 0 },
+      uRes: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      uImageRes: { value: new THREE.Vector2(textures[0].image?.width || 800, textures[0].image?.height || 600) }
+    },
+    vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
+    fragmentShader: `
+      uniform sampler2D uTexture1; uniform sampler2D uTexture2;
+      uniform float uProgress; uniform vec2 uRes; uniform vec2 uImageRes;
+      varying vec2 vUv;
+      void main() {
+        float sRatio = uRes.x / uRes.y; float iRatio = uImageRes.x / uImageRes.y;
+        vec2 uv = vUv;
+        if (sRatio > iRatio) { float scale = iRatio / sRatio; uv.x = (vUv.x - 0.5) / scale + 0.5; }
+        else { float scale = sRatio / iRatio; uv.y = (vUv.y - 0.5) / scale + 0.5; }
+        if(uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) { gl_FragColor = vec4(0.01, 0.0, 0.03, 1.0); return; }
+        vec4 t1 = texture2D(uTexture1, uv); vec4 t2 = texture2D(uTexture2, uv);
+        gl_FragColor = mix(t1, t2, uProgress);
+      }
+    `
+  });
+  scene.add(new THREE.Mesh(geometry, material));
+  createDots();
+  render();
+}
+
+function render() { requestAnimationFrame(render); renderer.render(scene, camera); }
+
+function changeSlide(index) {
+  if (isAnimating || index === currentIndex) return;
+  isAnimating = true;
+  material.uniforms.uTexture2.value = textures[index];
+  if(textures[index].image) material.uniforms.uImageRes.value.set(textures[index].image.width, textures[index].image.height);
+  gsap.to(material.uniforms.uProgress, { value: 1, duration: 0.7, onComplete: () => {
+    material.uniforms.uTexture1.value = textures[index];
+    material.uniforms.uProgress.value = 0;
+    currentIndex = index; isAnimating = false;
+    updateDots();
+  }});
+  updateDots(index);
+}
+
+function createDots() {
+  const container = document.getElementById('dots');
+  images.forEach((_, i) => {
+    const dot = document.createElement('div');
+    dot.className = `nav-dot ${i === 0 ? 'active' : ''}`;
+    dot.onclick = () => changeSlide(i);
+    container.appendChild(dot);
+  });
+}
+
+function updateDots(nextIndex = currentIndex) {
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === nextIndex));
+}
+
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  if (material) material.uniforms.uRes.value.set(window.innerWidth, window.innerHeight);
+});
+
+init();
+</script>
+</body>
+</html>
