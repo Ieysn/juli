@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Magical Gallery | Music Edition</title>
+  <title>For DIVA</title>
 
   <style>
     :root {
@@ -35,6 +35,7 @@
       opacity: 0;
     }
 
+    
     @keyframes floatMagic {
       0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
       20% { opacity: 0.5; }
@@ -62,7 +63,7 @@
     .nav-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.15); cursor: pointer; transition: 0.4s; }
     .nav-dot.active { background: var(--bloom-pink); box-shadow: 0 0 15px var(--bloom-pink); transform: scale(1.3); }
 
-    /* Yuxarı Şəkillər - Yenilənmiş (120px və Ortadakı Silindi) */
+    /* Yuxarı Şəkillər - 120px */
     .fairy-container { 
       position: absolute; 
       top: 40px; 
@@ -87,7 +88,23 @@
     .fairy-frame.twilight { border-color: var(--twilight-purple); box-shadow: 0 0 40px var(--twilight-purple); }
     .fairy-frame img { width: 94%; height: 94%; border-radius: 50%; object-fit: cover; }
 
-    .custom-cursor { position: fixed; top: 0; left: 0; width: 40px; height: 40px; background: radial-gradient(circle, #fff 0%, var(--twilight-purple) 30%, transparent 70%); border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%); z-index: 9999; mix-blend-mode: screen; box-shadow: 0 0 25px var(--twilight-purple); }
+    .custom-cursor { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 40px; 
+      height: 40px; 
+      background: radial-gradient(circle, #fff 0%, var(--twilight-purple) 30%, transparent 70%); 
+      border-radius: 50%; 
+      pointer-events: none; 
+      transform: translate(-50%, -50%); 
+      z-index: 9999; 
+      mix-blend-mode: screen; 
+      box-shadow: 0 0 25px var(--twilight-purple); 
+      /* Mobil üçün başlanğıcda gizli qala bilər, hərəkət edəndə görünər */
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
   </style>
 </head>
 <body>
@@ -102,9 +119,7 @@
 <div class="custom-cursor" id="cursor"></div>
 
 <div class="fairy-container">
-  <!-- Sol şəkil -->
   <div class="fairy-frame bloom"><img src="bloom.jpg" onerror="this.src='https://via.placeholder.com/150/f472b6/ffffff?text=B'"></div>
-  <!-- Sağ şəkil -->
   <div class="fairy-frame twilight"><img src="twilight.jpg" onerror="this.src='https://via.placeholder.com/150/a855f7/ffffff?text=T'"></div>
 </div>
 
@@ -122,10 +137,9 @@ function handleAutoPlay() {
     window.removeEventListener('mousedown', handleAutoPlay);
     window.removeEventListener('touchstart', handleAutoPlay);
     window.removeEventListener('keydown', handleAutoPlay);
-  }).catch(e => console.log("Musiqi üçün klik gözlənilir..."));
+  }).catch(e => console.log("Musiqi gözlənilir..."));
 }
 
-// Bütün mümkün qarşılıqlı təsirləri dinləyirik
 window.addEventListener('mousedown', handleAutoPlay);
 window.addEventListener('touchstart', handleAutoPlay);
 window.addEventListener('keydown', handleAutoPlay);
@@ -135,8 +149,30 @@ const images = ['cat1.jpg', 'cat2.jpg', 'cat3.jpg', 'cat4.jpeg', 'cat5.jpeg', 'c
 const emojis = ['🌸', '✨', '💖', '🐾', '⭐', '🌺', '💕'];
 
 const cursor = document.getElementById('cursor');
+
+// Kursoru hərəkət etdirən funksiya
+function moveCursor(x, y) {
+  cursor.style.opacity = 1; // Hərəkət edəndə görünür olsun
+  gsap.to(cursor, { x: x, y: y, duration: 0.1 });
+}
+
+// Siçan hərəkəti
 document.addEventListener('mousemove', (e) => {
-  gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+  moveCursor(e.clientX, e.clientY);
+});
+
+// Mobil toxunuş və sürüşdürmə (touchmove)
+document.addEventListener('touchmove', (e) => {
+  // Səhifənin sürüşməsinin qarşısını almaq üçün (opsional, kursorun işləməsi üçün vacibdir)
+  if (e.touches.length > 0) {
+    const touch = e.touches[0];
+    moveCursor(touch.clientX, touch.clientY);
+  }
+}, { passive: false });
+
+// Toxunuş bitəndə kursoru gizləmək istəsəniz (opsional)
+document.addEventListener('touchend', () => {
+  gsap.to(cursor, { opacity: 0, duration: 0.5 });
 });
 
 function createSparkles() {
